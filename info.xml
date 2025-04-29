@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin>
+  <name>SSH Spice</name>
+  <author>Mike Jackson</author>
+  <version>1.0.0</version>
+  <release_date>April 23, 2025</release_date>
+  <database>ssh</database>
+  <button>SSH Spice</button>
+  <description>Manage SSH public keys and connections with easy configuration export. Simplify your SSH workflow!</description>
+</plugin>
