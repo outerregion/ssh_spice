@@ -2,9 +2,14 @@
 <plugin>
   <name>SSH Spice</name>
   <author>Mike Jackson</author>
+  <website>https://github.com/outerregion/ssh_spice</website>
   <version>1.0.0</version>
-  <release_date>April 23, 2025</release_date>
-  <database>ssh</database>
-  <button>SSH Spice</button>
+  <release>April 29 2025</release>
+  <tested>5.8.4</tested>
+
+<!-- What does your plugin do? -->
   <description>Manage SSH public keys and connections with easy configuration export. Simplify your SSH workflow!</description>
+
+  <!-- This is the launch button in the plugin manager. If it is blank or missing, Configure Plugin will show up. -->
+    <button>SSH Spice</button>
 </plugin>
