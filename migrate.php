@@ -3,9 +3,10 @@
 // This file handles migrations for plugin updates
 
 require_once 'plugin_info.php';
+$plugin_name = "ssh_spice";
 
 $db = DB::getInstance();
-$plugin_name = plugin_name;
+//$plugin_name = plugin_name;
 
 // Check which updates have already been run
 $existing = [];

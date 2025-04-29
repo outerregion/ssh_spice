@@ -675,14 +675,14 @@ function saveGeneralSettings($data)
             $row = $existing->first();
 
             // Log the update action
-            error_log("Updating sshconfig for userid=$userid, id=" . $row->id . ", data=" . json_encode($data));
+            error_log("Updating sshconfig for userid=$userid id=" . $row->id . " . data=" . json_encode($data));
 
             $db->update('sshconfig', $row->id, $data);
         } else {
             $data['userid'] = $userid;
 
             // Log the insert action
-            error_log("Inserting new sshconfig for userid=$userid, data=" . json_encode($data));
+            error_log("Inserting new sshconfig for userid=$userid  data=" . json_encode($data));
 
             $db->insert('sshconfig', $data);
         }
@@ -802,11 +802,11 @@ if (!function_exists('sshGetUserConfig')) {
             $db->insert('sshconfig', $defaults);
 
             if ($db->error()) {
-                error_log($userid, "SSH Spice - Failed to create default SSH config: " . $db->errorString());
+                error_log($userid . "SSH Spice - Failed to create default SSH config: " . $db->errorString());
                 return (object)$defaults;
             }
 
-            error_log($userid, "SSH Spice - Created default SSH config");
+            error_log($userid . "SSH Spice - Created default SSH config");
             return (object)$defaults;
         }
     }
