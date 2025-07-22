@@ -28,7 +28,8 @@ if($pluginCheck > 0){
 
 //do you want to inject your plugin in the middle of core UserSpice pages?
 //visit https://userspice.com/plugin-hooks/ to get a better understanding of hooks
-$hooks = [];
+#$hooks = [];
+$hooks['account.php']['bottom'] = 'hooks/accountbottom.php';
 
 //The format is $hooks['userspicepage.php']['position'] = path to filename to include
 //Note you can include the same filename on multiple pages if that makes sense;

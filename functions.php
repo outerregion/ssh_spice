@@ -106,124 +106,123 @@ if (!function_exists('sshExportConfig')) {
     {
         global $db, $user, $us_url_root;
 
-
-        // Use current user if none specified
         if ($userid === null) {
             $userid = $user->data()->id;
         }
 
-        // Get user config
         $userConfig = sshGetUserConfig($userid);
         $advancedDirectives = loadAdvancedInfo($userid);
 
         // Get SSH connections for user
         $sql = "SELECT * FROM ssh WHERE createdby = ? ORDER BY sshgroup ASC, host ASC";
         $query = $db->query($sql, [$userid]);
+        $connections = $query->results();
 
         $sshwrite = "";
-        $current_sshgroup = "";
         $filepath = "output/$userid";
-        if (!is_writable($filepath)) {
+
+        if (!is_writable(dirname($filepath))) {
             error_log("Directory is not writable: $filepath");
             return false;
         }
-        // Create general settings section
+
+        // Add general settings
         $sshwrite .= "### General settings ###\n";
         $sshwrite .= "Host *\n";
-
-        // Add general settings from user config
         if (!empty($userConfig->identityfile)) {
             $sshwrite .= "    IdentityFile " . $userConfig->identityfile . "\n";
         }
-
         if (!empty($userConfig->tcpkeepalive)) {
             $sshwrite .= "    TCPKeepAlive " . $userConfig->tcpkeepalive . "\n";
         }
-
         if (!empty($userConfig->forwardagent)) {
             $sshwrite .= "    ForwardAgent " . $userConfig->forwardagent . "\n";
         }
-
         if (!empty($userConfig->serveraliveinterval)) {
             $sshwrite .= "    ServerAliveInterval " . $userConfig->serveraliveinterval . "\n";
         }
-
-        // Add advanced settings if they exist
         if (!empty($userConfig->compression)) {
             $sshwrite .= "    Compression " . $userConfig->compression . "\n";
         }
-
         if (!empty($userConfig->pubkeyauthentication)) {
             $sshwrite .= "    PubkeyAuthentication " . $userConfig->pubkeyauthentication . "\n";
         }
-
         if (!empty($userConfig->stricthostkeychecking)) {
             $sshwrite .= "    StrictHostKeyChecking " . $userConfig->stricthostkeychecking . "\n";
         }
-
         if (!empty($userConfig->loglevel)) {
             $sshwrite .= "    LogLevel " . $userConfig->loglevel . "\n";
         }
-
         if (!empty($userConfig->userknownhostsfile)) {
             $sshwrite .= "    UserKnownHostsFile " . $userConfig->userknownhostsfile . "\n";
         }
-
-        // Advanced cryptographic settings
         if (!empty($userConfig->ciphers)) {
             $sshwrite .= "    Ciphers " . $userConfig->ciphers . "\n";
         }
-
         if (!empty($userConfig->hostkeyalgorithms)) {
             $sshwrite .= "    HostKeyAlgorithms " . $userConfig->hostkeyalgorithms . "\n";
         }
-
         if (!empty($userConfig->kexalgorithms)) {
             $sshwrite .= "    KexAlgorithms " . $userConfig->kexalgorithms . "\n";
         }
-
         if (!empty($userConfig->macs)) {
             $sshwrite .= "    MACs " . $userConfig->macs . "\n";
         }
 
-        // Add a blank line between general and advanced settings
         $sshwrite .= "\n";
 
-        // Add custom advanced SSH directives
         if (!empty($advancedDirectives)) {
-            $sshwrite .= "\n# Custom SSH Directives\n" . $advancedDirectives . "\n";
+            $sshwrite .= "# Custom SSH Directives\n" . $advancedDirectives . "\n";
         }
 
-        // Process each SSH connection
-        if ($query->count()) {
-            foreach ($query->results() as $row) {
-                // Append each SSH connection configuration
-                $sshwrite .= "\n### SSH Connection: " . $row->host . " ###\n";
-                $sshwrite .= "Host " . $row->host . "\n";
-                $sshwrite .= "    HostName " . $row->host . "\n";
-                $sshwrite .= "    User " . $row->user . "\n";
-                $sshwrite .= "    Port " . $row->port . "\n";
-                $sshwrite .= "    IdentityFile " . $row->identityfile . "\n";
+        // ✅ Group connections by sshgroup
+        $grouped = [];
+        foreach ($connections as $conn) {
+            $group = $conn->sshgroup ?? 'Ungrouped';
+            $grouped[$group][] = $conn;
+        }
 
-                // Check if the properties exist before adding them
-                if (isset($row->forwardagent)) {
-                    $sshwrite .= "    ForwardAgent " . $row->forwardagent . "\n";
+        ksort($grouped);
+
+        foreach ($grouped as $groupName => $items) {
+            $sshwrite .= "\n### $groupName ###\n";
+
+            foreach ($items as $conn) {
+                $host = $conn->host ?? 'unnamed';
+                $hostname = $conn->hostname ?? '';
+                $connUser = $conn->user ?? '';
+                $port = $conn->port ?? '';
+                $identityFile = $conn->identityfile ?? '';
+                $proxyun = $conn->proxyun ?? '';
+                $proxyjump = $conn->ProxyJump ?? '';
+                $forwardlocal = $conn->forwardlocal ?? '';
+                $forwardremote = $conn->forwardremote ?? '';
+
+                if (!$host || !$hostname) continue;
+
+                $sshwrite .= "Host $host\n";
+                $sshwrite .= "    HostName $hostname\n";
+                if ($proxyjump) {
+                    $sshwrite .= "    ProxyJump $proxyun@$proxyjump\n";
                 }
+                if ($connUser) $sshwrite .= "    User $connUser\n";
+                if ($port) $sshwrite .= "    Port $port\n";
+                if ($identityFile) $sshwrite .= "    IdentityFile $identityFile\n";
 
-                if (isset($row->tcpkeepalive)) {
-                    $sshwrite .= "    TCPKeepAlive " . $row->tcpkeepalive . "\n";
+                if ($forwardlocal && $forwardremote) {
+                    $sshwrite .= "    LocalForward $forwardlocal localhost:$forwardremote\n";
                 }
-
-                // Add more fields from `$row` if necessary
+                if ($conn->ForwardX11) {
+                    $sshwrite .= "    ForwardX11 yes\n";
+                }
+                if ($conn->ForwardX11Trusted) {
+                    $sshwrite .= "    ForwardX11Trusted yes\n";
+                }
+                $sshwrite .= "\n";
             }
-        } else {
-            error_log("No SSH configurations found for user: $userid");
         }
 
-        // Debugging: Log the content that will be written to the config file
-        // error_log("Generated SSH config content:\n$sshwrite");
-
-        // Create output directory if it doesn't exist
+        // Ensure output dir exists
         if (!file_exists($filepath)) {
             if (!mkdir($filepath, 0777, true)) {
                 error_log("Failed to create directory: $filepath");
@@ -231,19 +230,16 @@ if (!function_exists('sshExportConfig')) {
             }
         }
 
-        // Write SSH config to file
-        $file = fopen("$filepath/config", "w");
+        $fullPath = "$filepath/config";
+        $file = fopen($fullPath, "w");
         if (!$file) {
-            error_log("Unable to open file: $filepath/config");
+            error_log("Unable to open file: $fullPath");
             return false;
         }
 
         fwrite($file, $sshwrite);
         fclose($file);
 
-        //error_log($userid . "SSH Spice Generated SSH config file");
-
-        // Return the path to the generated config file
         return "/usersc/plugins/ssh_spice/output/$userid/config";
     }
 }
@@ -675,14 +671,14 @@ function saveGeneralSettings($data)
             $row = $existing->first();
 
             // Log the update action
-            error_log("Updating sshconfig for userid=$userid id=" . $row->id . " . data=" . json_encode($data));
+            error_log("Updating sshconfig for userid=$userid, id=" . $row->id . ", data=" . json_encode($data));
 
             $db->update('sshconfig', $row->id, $data);
         } else {
             $data['userid'] = $userid;
 
             // Log the insert action
-            error_log("Inserting new sshconfig for userid=$userid  data=" . json_encode($data));
+            error_log("Inserting new sshconfig for userid=$userid, data=" . json_encode($data));
 
             $db->insert('sshconfig', $data);
         }
@@ -802,11 +798,11 @@ if (!function_exists('sshGetUserConfig')) {
             $db->insert('sshconfig', $defaults);
 
             if ($db->error()) {
-                error_log($userid . "SSH Spice - Failed to create default SSH config: " . $db->errorString());
+                error_log($userid, "SSH Spice - Failed to create default SSH config: " . $db->errorString());
                 return (object)$defaults;
             }
 
-            error_log($userid . "SSH Spice - Created default SSH config");
+            error_log($userid, "SSH Spice - Created default SSH config");
             return (object)$defaults;
         }
     }

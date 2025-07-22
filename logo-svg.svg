@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
-  <rect x="10" y="10" width="180" height="180" rx="20" ry="20" fill="#2c3e50" />
-  <rect x="40" y="50" width="120" height="60" rx="5" ry="5" fill="#ecf0f1" />
-  <rect x="70" y="120" width="60" height="40" rx="5" ry="5" fill="#3498db" />
-  <circle cx="100" cy="80" r="20" fill="#e74c3c" />
-  <rect x="90" y="70" width="20" height="50" rx="5" ry="5" fill="#2c3e50" />
-  <path d="M80,110 L70,130 L130,130 L120,110 Z" fill="#2c3e50" />
-  <text x="100" y="143" text-anchor="middle" font-family="Arial" font-size="20" font-weight="bold" fill="#ecf0f1">SSH</text>
-</svg>
